@@ -27,7 +27,7 @@
             @elseif($val == 'operate')
                 <td>
                     @foreach($operates as $ops)
-                        <a href="{{ @sprintf($ops['url'], $row['id']) }}"><i class="fa fa-{{$ops['cls']}}"></i></a>&nbsp;
+                        <a href="{{ @sprintf($ops['url'], $row['id']) }}" data-id="{{$row['id']}}" class="{{$ops['cls']}}" haschild="{{count($row->allChildrenDicts)}}"><i class="fa fa-{{$ops['cls']}}"></i></a>&nbsp;
                     @endforeach
                 </td>
             @else
@@ -52,6 +52,46 @@
         });
         $('#toolbar .collapseAll').click(function(){
             $('#treeTable').treetable('collapseAll');
+        });
+        $('.trash').click(function(){
+            var url = $(this).attr('href');
+            $(this).attr('href','javascript:void(0);');
+            var hasChild = $(this).attr('haschild');
+            var title = hasChild > 0 ? '删除将同时删除子级，确认删除？' : '确认删除？';
+            swal({
+                title: title,
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "确认",
+                showLoaderOnConfirm: true,
+                cancelButtonText: "取消",
+                preConfirm: function() {
+                    return new Promise(function(resolve) {
+                        $.ajax({
+                            method: 'post',
+                            url: url,
+                            data: {
+                                _method:'delete',
+                                _token:LA.token,
+                            },
+                            success: function (data) {
+                                $.pjax.reload('#pjax-container');
+                                resolve(data);
+                            }
+                        });
+                    });
+                }
+            }).then(function(result) {
+                var data = result.value;
+                if (typeof data === 'object') {
+                    if (data.status) {
+                        swal(data.message, '', 'success');
+                    } else {
+                        swal(data.message, '', 'error');
+                    }
+                }
+            });
         });
     });
 </script>
